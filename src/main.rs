@@ -23,6 +23,12 @@ impl Inventory {
 }
 
 impl Plot {
+    fn new() -> Self {
+        Plot {
+            state: PlotState::Empty,
+        }
+    }
+
     fn plant(&mut self) -> bool {
         match self.state {
             PlotState::Planted { .. } => false,
@@ -88,42 +94,20 @@ fn main() {
         harvests: 0,
     };
 
-    let mut inventory_without_seeds = Inventory {
-        seeds: 0,
-        harvests: 0,
-    };
+    let mut plots = vec![Plot::new(), Plot::new(), Plot::new()];
 
-    let mut plot = Plot {
-        state: PlotState::Empty,
-    };
+    plant_seed(&mut inventory_with_seeds, &mut plots[0]);
+    plant_seed(&mut inventory_with_seeds, &mut plots[1]);
+    plant_seed(&mut inventory_with_seeds, &mut plots[2]);
 
-    println!(
-        "{} should be false",
-        plant_seed(&mut inventory_without_seeds, &mut plot)
-    );
-    println!(
-        "{} should be true",
-        plant_seed(&mut inventory_with_seeds, &mut plot)
-    );
-    println!(
-        "{} should be false",
-        plant_seed(&mut inventory_with_seeds, &mut plot)
-    );
-    plot.advance_day();
-    plot.advance_day();
-
-    harvest_crop(&mut inventory_with_seeds, &mut plot);
-    println!("{}", inventory_with_seeds.harvests);
-    plot.advance_day();
-    harvest_crop(&mut inventory_with_seeds, &mut plot);
-    println!("{}", inventory_with_seeds.harvests);
-
-    match &plot.state {
-        PlotState::Planted { days_growing } => {
-            println!("days_growing: {days_growing}");
-        }
-        PlotState::Empty => {
-            println!("Shouldn't be printed");
+    for plot in &mut plots {
+        plot.advance_day();
+        plot.advance_day();
+        match plot.state {
+            PlotState::Empty => println!("La parcelle est vide"),
+            PlotState::Planted { days_growing } => {
+                println!("La parcelle est a {days_growing} jours");
+            }
         }
     }
 }
