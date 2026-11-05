@@ -63,6 +63,23 @@ impl Plot {
     }
 }
 
+struct Farm {
+    inventory: Inventory,
+    plots: Vec<Plot>,
+}
+
+impl Farm {
+    fn new(inventory: Inventory, plots: Vec<Plot>) -> Self {
+        Farm { inventory, plots }
+    }
+
+    fn advance_day(&mut self) {
+        for plot in &mut self.plots {
+            plot.advance_day();
+        }
+    }
+}
+
 fn plant_seed(inventory: &mut Inventory, plot: &mut Plot) -> bool {
     match plot.state {
         PlotState::Planted { .. } => false,
@@ -89,24 +106,26 @@ fn harvest_crop(inventory: &mut Inventory, plot: &mut Plot) -> bool {
 }
 
 fn main() {
-    let mut inventory_with_seeds = Inventory {
-        seeds: 2,
+    let inventory_with_seeds = Inventory {
+        seeds: 5,
         harvests: 0,
     };
+    let plots = vec![Plot::new(), Plot::new(), Plot::new()];
 
-    let mut plots = vec![Plot::new(), Plot::new(), Plot::new()];
+    let mut farm = Farm::new(inventory_with_seeds, plots);
 
-    plant_seed(&mut inventory_with_seeds, &mut plots[0]);
-    plant_seed(&mut inventory_with_seeds, &mut plots[1]);
-    plant_seed(&mut inventory_with_seeds, &mut plots[2]);
+    plant_seed(&mut farm.inventory, &mut farm.plots[0]);
+    plant_seed(&mut farm.inventory, &mut farm.plots[1]);
+    farm.advance_day();
+    farm.advance_day();
+    farm.advance_day();
+    harvest_crop(&mut farm.inventory, &mut farm.plots[0]);
 
-    for plot in &mut plots {
-        plot.advance_day();
-        plot.advance_day();
+    for (i, plot) in farm.plots.iter().enumerate() {
         match plot.state {
-            PlotState::Empty => println!("La parcelle est vide"),
+            PlotState::Empty => println!("La parcelle {} est vide", i + 1),
             PlotState::Planted { days_growing } => {
-                println!("La parcelle est a {days_growing} jours");
+                println!("La parcelle est planté et est à son {days_growing} jours")
             }
         }
     }
