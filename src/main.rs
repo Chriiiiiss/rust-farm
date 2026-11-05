@@ -12,6 +12,21 @@ enum ActionError {
     NotReady,
 }
 
+#[derive(Debug)]
+enum Command {
+    Plant(usize),
+    Harvest(usize),
+    AdvanceDay,
+    Show,
+    Quit,
+}
+
+#[derive(Debug)]
+enum ParseCommandError {
+    InvalidCommand,
+    InvalidIndex,
+}
+
 enum PlotState {
     Empty,
     Planted { days_growing: u32 },
@@ -139,7 +154,60 @@ fn harvest_crop(inventory: &mut Inventory, plot: &mut Plot) -> Result<(), Action
     Ok(())
 }
 
-fn main() {
+fn parse_command(input: &str) -> Result<Command, ParseCommandError> {
+    let mut words = input.split_whitespace();
+
+    match words.next() {
+        Some(word) => match word {
+            "plant" => {
+                let text = words.next().ok_or(ParseCommandError::InvalidCommand)?;
+                words
+                    .next()
+                    .is_none()
+                    .ok_or(ParseCommandError::InvalidCommand)?;
+
+                let idx = text
+                    .parse::<usize>()
+                    .map_err(|_| ParseCommandError::InvalidIndex)?;
+                Ok(Command::Plant(idx))
+            }
+            "harvest" => {
+                let text = words.next().ok_or(ParseCommandError::InvalidCommand)?;
+                words
+                    .next()
+                    .is_none()
+                    .ok_or(ParseCommandError::InvalidCommand)?;
+
+                let idx = text
+                    .parse::<usize>()
+                    .map_err(|_| ParseCommandError::InvalidIndex)?;
+                Ok(Command::Harvest(idx))
+            }
+            "day" => {
+                if words.next().is_none() {
+                    return Ok(Command::AdvanceDay);
+                }
+                Err(ParseCommandError::InvalidCommand)
+            }
+            "show" => {
+                if words.next().is_none() {
+                    return Ok(Command::Show);
+                }
+                Err(ParseCommandError::InvalidCommand)
+            }
+            "quit" => {
+                if words.next().is_none() {
+                    return Ok(Command::Quit);
+                }
+                Err(ParseCommandError::InvalidCommand)
+            }
+            _ => Err(ParseCommandError::InvalidCommand),
+        },
+        None => Err(ParseCommandError::InvalidCommand),
+    }
+}
+
+fn main() -> std::io::Result<()> {
     let inventory_with_seeds = Inventory {
         seeds: 5,
         harvests: 0,
@@ -149,17 +217,33 @@ fn main() {
     let mut farm = Farm::new(inventory_with_seeds, plots);
 
     farm.print_plots();
-    println!("{:?}", farm.plant(0));
-    println!("{:?}", farm.plant(1));
-    println!("{:?}", farm.plant(1));
-    farm.print_plots();
-    farm.advance_day();
-    farm.advance_day();
-    farm.print_plots();
-    farm.advance_day();
-    farm.print_plots();
-    println!("{:?}", farm.harvest(1));
-    println!("{:?}", farm.harvest(3));
-    println!("{:?}", farm.plant(1));
-    println!("{:?}", farm.plant(2));
+
+    let mut input = String::new();
+
+    loop {
+        input.clear();
+        let bytes_read = std::io::stdin().read_line(&mut input)?;
+
+        if bytes_read == 0 {
+            break;
+        }
+
+        let command = match parse_command(&input) {
+            Ok(command) => command,
+            Err(error) => {
+                println!("Commande invalide : {error:?}");
+                continue;
+            }
+        };
+
+        match command {
+            Command::Plant(index) => println!("{:?}", farm.plant(index)),
+            Command::Harvest(index) => println!("{:?}", farm.harvest(index)),
+            Command::AdvanceDay => println!("{:?}", farm.advance_day()),
+            Command::Quit => break,
+            Command::Show => farm.print_plots(),
+        };
+    }
+
+    Ok(())
 }
