@@ -73,6 +73,15 @@ fn plant_seed(inventory: &mut Inventory, plot: &mut Plot) -> bool {
     }
 }
 
+fn harvest_crop(inventory: &mut Inventory, plot: &mut Plot) -> bool {
+    if !plot.harvest() {
+        return false;
+    }
+
+    inventory.harvests += 1;
+    true
+}
+
 fn main() {
     let mut inventory_with_seeds = Inventory {
         seeds: 2,
@@ -102,6 +111,12 @@ fn main() {
     );
     plot.advance_day();
     plot.advance_day();
+
+    harvest_crop(&mut inventory_with_seeds, &mut plot);
+    println!("{}", inventory_with_seeds.harvests);
+    plot.advance_day();
+    harvest_crop(&mut inventory_with_seeds, &mut plot);
+    println!("{}", inventory_with_seeds.harvests);
 
     match &plot.state {
         PlotState::Planted { days_growing } => {
