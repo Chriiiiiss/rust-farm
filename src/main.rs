@@ -42,6 +42,19 @@ impl Plot {
             PlotState::Empty => false,
         }
     }
+
+    fn harvest(&mut self) -> bool {
+        match self.state {
+            PlotState::Empty => false,
+            PlotState::Planted { days_growing } => {
+                if days_growing < 3 {
+                    return false;
+                }
+                self.state = PlotState::Empty;
+                true
+            }
+        }
+    }
 }
 
 fn plant_seed(inventory: &mut Inventory, plot: &mut Plot) -> bool {
