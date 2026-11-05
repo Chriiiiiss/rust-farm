@@ -3,6 +3,15 @@ struct Inventory {
     seeds: u32,
 }
 
+#[derive(Debug)]
+enum ActionError {
+    InvalidPlot,
+    NoSeeds,
+    AlreadyPlanted,
+    EmptyPlot,
+    NotReady,
+}
+
 enum PlotState {
     Empty,
     Planted { days_growing: u32 },
@@ -29,12 +38,12 @@ impl Plot {
         }
     }
 
-    fn plant(&mut self) -> bool {
+    fn plant(&mut self) -> Result<(), ActionError> {
         match self.state {
-            PlotState::Planted { .. } => false,
+            PlotState::Planted { .. } => Err(ActionError::AlreadyPlanted),
             PlotState::Empty => {
                 self.state = PlotState::Planted { days_growing: 0 };
-                true
+                Ok(())
             }
         }
     }
@@ -49,15 +58,15 @@ impl Plot {
         }
     }
 
-    fn harvest(&mut self) -> bool {
+    fn harvest(&mut self) -> Result<(), ActionError> {
         match self.state {
-            PlotState::Empty => false,
+            PlotState::Empty => Err(ActionError::EmptyPlot),
             PlotState::Planted { days_growing } => {
                 if days_growing < 3 {
-                    return false;
+                    return Err(ActionError::NotReady);
                 }
                 self.state = PlotState::Empty;
-                true
+                Ok(())
             }
         }
     }
@@ -79,17 +88,17 @@ impl Farm {
         }
     }
 
-    fn plant(&mut self, index: usize) -> bool {
+    fn plant(&mut self, index: usize) -> Result<(), ActionError> {
         match self.plots.get_mut(index) {
             Some(plot) => plant_seed(&mut self.inventory, plot),
-            None => false,
+            None => Err(ActionError::InvalidPlot),
         }
     }
 
-    fn harvest(&mut self, index: usize) -> bool {
+    fn harvest(&mut self, index: usize) -> Result<(), ActionError> {
         match self.plots.get_mut(index) {
             Some(plot) => harvest_crop(&mut self.inventory, plot),
-            None => false,
+            None => Err(ActionError::InvalidPlot),
         }
     }
 
@@ -107,15 +116,15 @@ impl Farm {
     }
 }
 
-fn plant_seed(inventory: &mut Inventory, plot: &mut Plot) -> bool {
+fn plant_seed(inventory: &mut Inventory, plot: &mut Plot) -> Result<(), ActionError> {
     match plot.state {
-        PlotState::Planted { .. } => false,
+        PlotState::Planted { .. } => Err(ActionError::AlreadyPlanted),
 
         PlotState::Empty => {
             let consume = inventory.consume_seed();
 
             if !consume {
-                return false;
+                return Err(ActionError::NoSeeds);
             }
 
             plot.plant()
@@ -123,13 +132,11 @@ fn plant_seed(inventory: &mut Inventory, plot: &mut Plot) -> bool {
     }
 }
 
-fn harvest_crop(inventory: &mut Inventory, plot: &mut Plot) -> bool {
-    if !plot.harvest() {
-        return false;
-    }
+fn harvest_crop(inventory: &mut Inventory, plot: &mut Plot) -> Result<(), ActionError> {
+    plot.harvest()?;
 
     inventory.harvests += 1;
-    true
+    Ok(())
 }
 
 fn main() {
@@ -142,14 +149,17 @@ fn main() {
     let mut farm = Farm::new(inventory_with_seeds, plots);
 
     farm.print_plots();
-    farm.plant(0);
-    farm.plant(1);
+    println!("{:?}", farm.plant(0));
+    println!("{:?}", farm.plant(1));
+    println!("{:?}", farm.plant(1));
     farm.print_plots();
     farm.advance_day();
     farm.advance_day();
     farm.print_plots();
     farm.advance_day();
     farm.print_plots();
-    farm.harvest(1);
-    farm.harvest(3);
+    println!("{:?}", farm.harvest(1));
+    println!("{:?}", farm.harvest(3));
+    println!("{:?}", farm.plant(1));
+    println!("{:?}", farm.plant(2));
 }
