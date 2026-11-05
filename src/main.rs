@@ -78,6 +78,33 @@ impl Farm {
             plot.advance_day();
         }
     }
+
+    fn plant(&mut self, index: usize) -> bool {
+        match self.plots.get_mut(index) {
+            Some(plot) => plant_seed(&mut self.inventory, plot),
+            None => false,
+        }
+    }
+
+    fn harvest(&mut self, index: usize) -> bool {
+        match self.plots.get_mut(index) {
+            Some(plot) => harvest_crop(&mut self.inventory, plot),
+            None => false,
+        }
+    }
+
+    fn print_plots(&self) {
+        println!("===================================");
+        for (i, plot) in self.plots.iter().enumerate() {
+            match plot.state {
+                PlotState::Empty => println!("La parcelle {} est vide", i + 1),
+                PlotState::Planted { days_growing } => {
+                    println!("La parcelle est planté et est à son {days_growing} jours")
+                }
+            }
+        }
+        println!("===================================");
+    }
 }
 
 fn plant_seed(inventory: &mut Inventory, plot: &mut Plot) -> bool {
@@ -114,19 +141,15 @@ fn main() {
 
     let mut farm = Farm::new(inventory_with_seeds, plots);
 
-    plant_seed(&mut farm.inventory, &mut farm.plots[0]);
-    plant_seed(&mut farm.inventory, &mut farm.plots[1]);
+    farm.print_plots();
+    farm.plant(0);
+    farm.plant(1);
+    farm.print_plots();
     farm.advance_day();
     farm.advance_day();
+    farm.print_plots();
     farm.advance_day();
-    harvest_crop(&mut farm.inventory, &mut farm.plots[0]);
-
-    for (i, plot) in farm.plots.iter().enumerate() {
-        match plot.state {
-            PlotState::Empty => println!("La parcelle {} est vide", i + 1),
-            PlotState::Planted { days_growing } => {
-                println!("La parcelle est planté et est à son {days_growing} jours")
-            }
-        }
-    }
+    farm.print_plots();
+    farm.harvest(1);
+    farm.harvest(3);
 }
